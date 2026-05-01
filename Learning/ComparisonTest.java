@@ -1,73 +1,115 @@
 import SlidingWindow.SlidingWindow;
+import TokenBucket.TokenBucketRateLimiter;
+import java.util.function.LongSupplier;
 
 public class ComparisonTest {
 
-    public static void main(String[] args) throws InterruptedException {
-        System.out.println("========================================");
-        System.out.println("Max 3 requests per 10s window");
-        System.out.println("========================================\n");
+    static long fakeTime = 0;
+    static final LongSupplier clock = () -> fakeTime;
 
-        testFixed();
-        testSliding();
+    public static void main(String[] args) {
+        test1_FixedWindowBoundaryBurst();
+        test2_SlidingWindowCorrectness();
+        test3_TokenBucketGradualRefill();
     }
 
-    // -------------------------------------------------------
-    static void testFixed() throws InterruptedException {
-        FixedWindowLimiter fixed = new FixedWindowLimiter(3, 10000);
+    // ─────────────────────────────────────────────────────────
+    // TEST 1: Fixed Window — Boundary Burst
+    // ─────────────────────────────────────────────────────────
+    static void test1_FixedWindowBoundaryBurst() {
+        header("TEST 1: Fixed Window — Boundary Burst Problem");
+
+        FixedWindowLimiter fixed = new FixedWindowLimiter(3, 10000, clock);
         String user = "dev";
-        long start = System.currentTimeMillis();
 
-        System.out.println("=== FIXED WINDOW ===");
+        fakeTime = 0;
+        log(1, fixed.allowedReq(user));
 
-        System.out.println("\n-- Phase 1: 3 requests at t~0s --");
-        for (int i = 1; i <= 3; i++) {
-            log(i, fixed.allowedReq(user), start);
-        }
+        fakeTime = 9000;
+        log(2, fixed.allowedReq(user));
+        log(3, fixed.allowedReq(user));
 
-        System.out.println("\n[ waiting for window to reset... ~10s ]");
-        Thread.sleep(10100); // window resets
+        // FIXED → after boundary
+        fakeTime = 10001;
 
-        System.out.println("\n-- Phase 2: burst immediately after reset --");
-        System.out.println("   Window just reset → Fixed allows freely\n");
-        for (int i = 4; i <= 6; i++) {
-            log(i, fixed.allowedReq(user), start);
-        }
+        log(4, fixed.allowedReq(user));
+        log(5, fixed.allowedReq(user));
+        log(6, fixed.allowedReq(user));
 
-        System.out.println("\n→ Fixed allowed 6 requests. 3 from Phase1 + 3 from Phase2.");
-        System.out.println("→ If Phase1 was at t=9.9s and Phase2 at t=10.1s, that's 6 in 0.2s. DANGEROUS.\n");
+        System.out.println();
     }
 
-    // -------------------------------------------------------
-    static void testSliding() throws InterruptedException {
-        SlidingWindow sliding = new SlidingWindow(3, 10000L);
+    // ─────────────────────────────────────────────────────────
+    // TEST 2: Sliding Window — Correct Behavior
+    // ─────────────────────────────────────────────────────────
+    static void test2_SlidingWindowCorrectness() {
+        header("TEST 2: Sliding Window");
+
+        SlidingWindow sliding = new SlidingWindow(3, 10000L, clock);
         String user = "dev";
-        long start = System.currentTimeMillis();
 
-        System.out.println("=== SLIDING WINDOW ===");
+        fakeTime = 0;
+        log(1, sliding.allowedRequests(user));
 
-        System.out.println("\n-- Phase 1: 3 requests at t~0s --");
-        for (int i = 1; i <= 3; i++) {
-            log(i, sliding.allowedRequests(user), start);
-        }
+        fakeTime = 9000;
+        log(2, sliding.allowedRequests(user));
+        log(3, sliding.allowedRequests(user));
 
-        System.out.println("\n[ waiting 10.1s ]");
-        Thread.sleep(10100);
+        // still same window → should block
+        fakeTime = 9999;
+        log(4, sliding.allowedRequests(user));
+        log(5, sliding.allowedRequests(user));
+        log(6, sliding.allowedRequests(user));
 
-        System.out.println("\n-- Phase 2: burst after 10s --");
-        System.out.println("   Sliding looks back 10s → Phase1 requests just expired → allows\n");
-        for (int i = 4; i <= 6; i++) {
-            log(i, sliding.allowedRequests(user), start);
-        }
+        // after boundary → DIFFERENCE
+        fakeTime = 10001;
+        log(7, sliding.allowedRequests(user));
+        log(8, sliding.allowedRequests(user));
+        log(9, sliding.allowedRequests(user));
 
-        System.out.println("\n→ Sliding also allows here because 10s genuinely passed.");
-        System.out.println("→ The difference: try Phase2 at t=5s (before Phase1 expires). It will BLOCK.");
+        System.out.println();
     }
 
-    // -------------------------------------------------------
-    static void log(int reqNum, boolean result, long start) {
-        System.out.printf("  Req %d (t=%dms) → %s%n",
-                reqNum,
-                System.currentTimeMillis() - start,
+    // ─────────────────────────────────────────────────────────
+    // TEST 3: Token Bucket — Gradual Refill
+    // ─────────────────────────────────────────────────────────
+    static void test3_TokenBucketGradualRefill() {
+        header("TEST 3: Token Bucket");
+
+        TokenBucketRateLimiter token = new TokenBucketRateLimiter(3, 0.3, clock);
+        String user = "dev";
+
+        fakeTime = 0;
+        logToken(1, token.allowRequests(user));
+        logToken(2, token.allowRequests(user));
+        logToken(3, token.allowRequests(user));
+
+        logToken(4, token.allowRequests(user));
+
+        fakeTime = 4000;
+        logToken(5, token.allowRequests(user));
+
+        fakeTime = 10000;
+        logToken(6, token.allowRequests(user));
+
+        System.out.println();
+    }
+
+    static void log(int reqNum, boolean result) {
+        System.out.printf("Req %-2d (t=%-6dms) | %s%n",
+                reqNum, fakeTime,
                 result ? "ALLOWED" : "BLOCKED");
+    }
+
+    static void logToken(int reqNum, boolean result) {
+        System.out.printf("Req %-2d (t=%-6dms) | %s%n",
+                reqNum, fakeTime,
+                result ? "ALLOWED" : "BLOCKED");
+    }
+
+    static void header(String title) {
+        System.out.println("==========================================");
+        System.out.println(title);
+        System.out.println("==========================================");
     }
 }
