@@ -2,9 +2,12 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
         FixedWindowLimiter limiter = new FixedWindowLimiter(3, 5000);
         String user = "dev";
-
-        // FIRST request → window starts here
-        System.out.println("Init → " + limiter.allowedReq(user));
+        // for(int i=0; i<=10; i++){
+        //     boolean allow = limiter.allowedReq(user);
+        //     System.out.println("Request " + i + "->" + (allow?"ALLOWED" : "bLOCKED"));
+        //     Thread.sleep(1000);
+        // }
+           System.out.println("Init → " + limiter.allowedReq(user));
 
         // go near end of window
         Thread.sleep(4900);

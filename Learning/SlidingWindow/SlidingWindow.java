@@ -11,7 +11,7 @@ public class SlidingWindow{
         Long winTime;
         String userId;
 
-        SlidingWindow(int maxReq, Long winTime){
+        public SlidingWindow(int maxReq, Long winTime){
             this.maxReq = maxReq;
             this.winTime = winTime;
             this.mpp = new HashMap<>();
