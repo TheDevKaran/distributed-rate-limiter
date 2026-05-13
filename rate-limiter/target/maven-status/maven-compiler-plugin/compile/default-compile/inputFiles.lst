@@ -2,6 +2,7 @@ D:\Rate Limiter\rate-limiter\src\main\java\com\example\Config\RedisConfig.java
 D:\Rate Limiter\rate-limiter\src\main\java\com\example\Controller\RateLimiterController.java
 D:\Rate Limiter\rate-limiter\src\main\java\com\example\DTO\CheckRequest.java
 D:\Rate Limiter\rate-limiter\src\main\java\com\example\DTO\CheckResponse.java
+D:\Rate Limiter\rate-limiter\src\main\java\com\example\DTO\RateLimitResult.java
 D:\Rate Limiter\rate-limiter\src\main\java\com\example\HealthController.java
 D:\Rate Limiter\rate-limiter\src\main\java\com\example\inmemory\fixed\FixedWindowLimiter.java
 D:\Rate Limiter\rate-limiter\src\main\java\com\example\inmemory\fixed\Window.java

@@ -1,41 +1,25 @@
 package com.example.Service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.example.DTO.RateLimitResult;
 import com.example.limiter.redis.fixed.FixedWindowLimiter;
-
-import jakarta.annotation.PostConstruct;
-import redis.clients.jedis.JedisPool;
 
 @Service
 public class FixedWindowService {
-    private final JedisPool jedisPool;
 
-    @Value("${rate.limit.fixed.max-requests}")
-    private int maxRequests;
+    private final FixedWindowLimiter limiter;
 
-    @Value("${rate.limit.fixed.window-seconds}")
-    private int windowSeconds;
-
-    private FixedWindowLimiter limiter;
-
-    public FixedWindowService(JedisPool jedisPool) {
-        this.jedisPool = jedisPool;
+    public FixedWindowService(
+            FixedWindowLimiter limiter
+    ) {
+        this.limiter = limiter;
     }
 
-    @PostConstruct
-    public void init() {
+    public RateLimitResult allowRequest(
+            String userId
+    ) {
 
-        this.limiter =
-                new FixedWindowLimiter(
-                        jedisPool,
-                        maxRequests,
-                        windowSeconds
-                );
-    }
-
-    public boolean allowRequest(String userId) {
         return limiter.allowedReq(userId);
     }
 }

@@ -8,6 +8,8 @@ import redis.clients.jedis.exceptions.JedisException;
 import java.util.Arrays;
 import java.util.Collections;
 
+import com.example.DTO.RateLimitResult;
+
 public class FixedWindowLimiter {
 
     private final JedisPool pool;
@@ -59,9 +61,9 @@ public class FixedWindowLimiter {
         }
     }
 
-    public boolean allowedReq(String userId) {
+    public RateLimitResult allowedReq(String userId) {
         if (maxReq <= 0)
-            return false;
+            return new RateLimitResult(false, 0, 0);
 
         String key = "rate_limit:fixed:" + userId;
 
@@ -77,20 +79,38 @@ public class FixedWindowLimiter {
                                 String.valueOf(windowTime)
                         )
                 );
-                return (Long) result != -1;
+                Long currentCount = (Long) result;
 
+                long ttl = jedis.ttl(key);
+
+                if (currentCount == -1) {
+                    return new RateLimitResult(
+                            false,
+                            0,
+                            ttl
+                    );
+                }
+
+                long remaining =
+                        Math.max(0, maxReq - currentCount);
+
+                return new RateLimitResult(
+                        true,
+                        remaining,
+                        ttl
+                );
             } catch (JedisException e) {
                 attempts++;
                 if (attempts == 3) {
                     // Redis is down — fail open (allow) or fail closed (block)
                     // fail open here: don't punish users for our infrastructure issues
                     System.err.println("Redis unavailable after 3 attempts, failing open: " + e.getMessage());
-                    return true;
+                    return new RateLimitResult(true, -1, -1);
                 }
             }
         }
 
-        return true; // unreachable but compiler needs it
+        return new RateLimitResult(true, -1, -1);
     }
 
     public void clearUser(String userId) {

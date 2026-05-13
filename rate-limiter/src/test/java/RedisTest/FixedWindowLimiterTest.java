@@ -36,23 +36,23 @@ public class FixedWindowLimiterTest {
     @Test
     void shouldAllowExactlyUpToLimit() {
         for (int i = 0; i < 5; i++)
-            assertTrue(limiter.allowedReq("dev"), "Request " + (i + 1) + " should be allowed");
+            assertTrue(limiter.allowedReq("dev").isAllowed(), "Request " + (i + 1) + " should be allowed");
 
-        assertFalse(limiter.allowedReq("dev"), "6th request must be blocked");
+        assertFalse(limiter.allowedReq("dev").isAllowed(), "6th request must be blocked");
     }
 
     @Test
     void shouldBlockImmediatelyWhenLimitIsZero() {
         FixedWindowLimiter zeroLimiter = new FixedWindowLimiter(0, 5, "localhost", 6379);
-        assertFalse(zeroLimiter.allowedReq("dev"));
+        assertFalse(zeroLimiter.allowedReq("dev").isAllowed());
         zeroLimiter.close();
     }
 
     @Test
     void shouldAllowOneRequestIfLimitIsOne() {
         FixedWindowLimiter oneLimiter = new FixedWindowLimiter(1, 5, "localhost", 6379);
-        assertTrue(oneLimiter.allowedReq("dev"));
-        assertFalse(oneLimiter.allowedReq("dev"));
+        assertTrue(oneLimiter.allowedReq("dev").isAllowed());
+        assertFalse(oneLimiter.allowedReq("dev").isAllowed());
         oneLimiter.close();
     }
 
@@ -65,11 +65,11 @@ public class FixedWindowLimiterTest {
         for (int i = 0; i < 5; i++)
             limiter.allowedReq("dev");
 
-        assertFalse(limiter.allowedReq("dev"), "Should be blocked before reset");
+        assertFalse(limiter.allowedReq("dev").isAllowed(), "Should be blocked before reset");
 
         Thread.sleep(6000); // window is 5s, wait 6s
 
-        assertTrue(limiter.allowedReq("dev"), "Should allow after window expires");
+        assertTrue(limiter.allowedReq("dev").isAllowed(), "Should allow after window expires");
     }
 
     @Test
@@ -79,7 +79,7 @@ public class FixedWindowLimiterTest {
 
         Thread.sleep(3000); // only half the window passed
 
-        assertFalse(limiter.allowedReq("dev"), "Should still be blocked mid-window");
+        assertFalse(limiter.allowedReq("dev").isAllowed(), "Should still be blocked mid-window");
     }
 
     @Test
@@ -91,9 +91,9 @@ public class FixedWindowLimiterTest {
 
         // full quota restored — not just 1
         for (int i = 0; i < 5; i++)
-            assertTrue(limiter.allowedReq("dev"), "Request " + (i + 1) + " should be allowed after reset");
+            assertTrue(limiter.allowedReq("dev").isAllowed(), "Request " + (i + 1) + " should be allowed after reset");
 
-        assertFalse(limiter.allowedReq("dev"), "Should block again after new window exhausted");
+        assertFalse(limiter.allowedReq("dev").isAllowed(), "Should block again after new window exhausted");
     }
 
     // ─────────────────────────────────────────────
@@ -105,13 +105,13 @@ public class FixedWindowLimiterTest {
         for (int i = 0; i < 5; i++)
             limiter.allowedReq("user1");
 
-        assertFalse(limiter.allowedReq("user1"));
+        assertFalse(limiter.allowedReq("user1").isAllowed());
 
         // user2 completely unaffected
         for (int i = 0; i < 5; i++)
-            assertTrue(limiter.allowedReq("user2"), "user2 request " + (i + 1) + " should be allowed");
+            assertTrue(limiter.allowedReq("user2").isAllowed(), "user2 request " + (i + 1) + " should be allowed");
 
-        assertFalse(limiter.allowedReq("user2"));
+        assertFalse(limiter.allowedReq("user2").isAllowed());
     }
 
     @Test
@@ -123,9 +123,9 @@ public class FixedWindowLimiterTest {
             limiter.allowedReq("user3");
         }
 
-        assertFalse(limiter.allowedReq("user1"), "user1 should be blocked");
-        assertFalse(limiter.allowedReq("user2"), "user2 should be blocked");
-        assertFalse(limiter.allowedReq("user3"), "user3 should be blocked");
+        assertFalse(limiter.allowedReq("user1").isAllowed(), "user1 should be blocked");
+        assertFalse(limiter.allowedReq("user2").isAllowed(), "user2 should be blocked");
+        assertFalse(limiter.allowedReq("user3").isAllowed(), "user3 should be blocked");
     }
 
     @Test
@@ -134,8 +134,8 @@ public class FixedWindowLimiterTest {
         for (int u = 0; u < 100; u++) {
             String user = "user_" + u;
             for (int r = 0; r < 5; r++)
-                assertTrue(limiter.allowedReq(user), user + " req " + r + " should be allowed");
-            assertFalse(limiter.allowedReq(user), user + " 6th req should be blocked");
+                assertTrue(limiter.allowedReq(user).isAllowed(), user + " req " + r + " should be allowed");
+            assertFalse(limiter.allowedReq(user).isAllowed(), user + " 6th req should be blocked");
         }
     }
 
@@ -148,14 +148,14 @@ public class FixedWindowLimiterTest {
         FixedWindowLimiter server1 = new FixedWindowLimiter(5, 5, "localhost", 6379);
         FixedWindowLimiter server2 = new FixedWindowLimiter(5, 5, "localhost", 6379);
 
-        assertTrue(server1.allowedReq("dev")); // 1
-        assertTrue(server2.allowedReq("dev")); // 2
-        assertTrue(server1.allowedReq("dev")); // 3
-        assertTrue(server2.allowedReq("dev")); // 4
-        assertTrue(server1.allowedReq("dev")); // 5
+        assertTrue(server1.allowedReq("dev").isAllowed()); // 1
+        assertTrue(server2.allowedReq("dev").isAllowed()); // 2
+        assertTrue(server1.allowedReq("dev").isAllowed()); // 3
+        assertTrue(server2.allowedReq("dev").isAllowed()); // 4
+        assertTrue(server1.allowedReq("dev").isAllowed()); // 5
 
         // 6th request — regardless of which server — must be blocked
-        assertFalse(server2.allowedReq("dev"), "6th request must be blocked across servers");
+        assertFalse(server2.allowedReq("dev").isAllowed(), "6th request must be blocked across servers");
 
         server1.close();
         server2.close();
@@ -171,7 +171,7 @@ public class FixedWindowLimiterTest {
         int allowed = 0;
         for (int i = 0; i < 20; i++) {
             FixedWindowLimiter server = servers.get(i % 10);
-            if (server.allowedReq("dev")) allowed++;
+            if (server.allowedReq("dev").isAllowed()) allowed++;
         }
 
         assertEquals(5, allowed, "Only 5 requests should be allowed across all servers");
@@ -199,7 +199,7 @@ public class FixedWindowLimiterTest {
             executor.submit(() -> {
                 try {
                     startLatch.await(); // hold all threads until gun fires
-                    if (concurrentLimiter.allowedReq("dev"))
+                    if (concurrentLimiter.allowedReq("dev").isAllowed())
                         allowed.incrementAndGet();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -247,7 +247,7 @@ public class FixedWindowLimiterTest {
                 executor.submit(() -> {
                     try {
                         startLatch.await();
-                        if (concurrentLimiter.allowedReq(user))
+                        if (concurrentLimiter.allowedReq(user).isAllowed())
                             allowedPerUser.get(user).incrementAndGet();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -281,8 +281,8 @@ public class FixedWindowLimiterTest {
     void shouldHandleVeryHighLimit() {
         FixedWindowLimiter bigLimiter = new FixedWindowLimiter(10000, 60, "localhost", 6379);
         for (int i = 0; i < 10000; i++)
-            assertTrue(bigLimiter.allowedReq("dev"), "Request " + i + " should be allowed");
-        assertFalse(bigLimiter.allowedReq("dev"), "10001st should be blocked");
+            assertTrue(bigLimiter.allowedReq("dev").isAllowed(), "Request " + i + " should be allowed");
+        assertFalse(bigLimiter.allowedReq("dev").isAllowed(), "10001st should be blocked");
         bigLimiter.close();
     }
 
@@ -291,7 +291,7 @@ public class FixedWindowLimiterTest {
         // all at same millisecond effectively — tests same-timestamp behavior
         int allowed = 0;
         for (int i = 0; i < 100; i++)
-            if (limiter.allowedReq("dev")) allowed++;
+            if (limiter.allowedReq("dev").isAllowed()) allowed++;
 
         assertEquals(5, allowed, "Only 5 should be allowed regardless of speed");
     }
@@ -301,8 +301,8 @@ public class FixedWindowLimiterTest {
         // exhaust, wait, exhaust, wait, exhaust — 3 full cycles
         for (int cycle = 0; cycle < 3; cycle++) {
             for (int i = 0; i < 5; i++)
-                assertTrue(limiter.allowedReq("dev"), "Cycle " + cycle + " req " + i + " should be allowed");
-            assertFalse(limiter.allowedReq("dev"), "Cycle " + cycle + " 6th should be blocked");
+                assertTrue(limiter.allowedReq("dev").isAllowed(), "Cycle " + cycle + " req " + i + " should be allowed");
+            assertFalse(limiter.allowedReq("dev").isAllowed(), "Cycle " + cycle + " 6th should be blocked");
             Thread.sleep(6000);
         }
     }

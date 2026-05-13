@@ -2,7 +2,17 @@ package com.example.Controller;
 
 import com.example.DTO.CheckRequest;
 import com.example.DTO.CheckResponse;
+import com.example.DTO.RateLimitResult;
 import com.example.Service.FixedWindowService;
+import com.example.annotation.RateLimit;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Map;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,17 +26,24 @@ public class RateLimiterController {
     ) {
         this.fixedWindowService = fixedWindowService;
     }
+        
+        @RateLimit(policy = "default")
+        @GetMapping("/hello")
+        public Map<String, Object> hello(
+                HttpServletRequest request
+        ) {
 
-    @PostMapping("/check")
-    public CheckResponse check(
-            @RequestBody CheckRequest request
-    ) {
-
-        boolean allowed =
-                fixedWindowService.allowRequest(
-                        request.getClientId()
+        RateLimitResult result =
+                (RateLimitResult) request.getAttribute(
+                        "rateLimitResult"
                 );
 
-        return new CheckResponse(allowed);
-    }
+        return Map.of(
+                "allowed", true,
+                "remainingRequests",
+                result.getRemainingRequests(),
+                "retryAfterSeconds",
+                result.getRetryAfterSeconds()
+        );
+        }
 }

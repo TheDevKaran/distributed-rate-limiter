@@ -8,12 +8,15 @@ import redis.clients.jedis.exceptions.JedisException;
 import java.util.Arrays;
 import java.util.Collections;
 
+import com.example.DTO.RateLimitResult;
+
 public class FixedWindowLimiter {
 
     private final JedisPool pool;
     private final int maxReq;
     private final int windowTime;
     private final String scriptSha;
+    private final String policyName;
 
     private static final String LUA_SCRIPT = """
         local current = redis.call('GET', KEYS[1])
@@ -32,22 +35,25 @@ public class FixedWindowLimiter {
 public FixedWindowLimiter(
         JedisPool pool,
         int maxReq,
-        int windowTime
+        int windowTime,
+        String policyName
+
 ) {
     this.pool = pool;
     this.maxReq = maxReq;
     this.windowTime = windowTime;
+    this.policyName = policyName;
 
     try (Jedis jedis = pool.getResource()) {
         this.scriptSha = jedis.scriptLoad(LUA_SCRIPT);
     }
 }
 
-    public boolean allowedReq(String userId) {
+    public RateLimitResult allowedReq(String userId) {
         if (maxReq <= 0)
-            return false;
+            return new RateLimitResult(false, 0, 0);
 
-        String key = "rate_limit:fixed:" + userId;
+        String key = "rate_limit:" + policyName + ":" + userId;
 
         int attempts = 0;
 
@@ -61,7 +67,26 @@ public FixedWindowLimiter(
                                 String.valueOf(windowTime)
                         )
                 );
-                return (Long) result != -1;
+                Long currentCount = (Long) result;
+
+                long ttl = jedis.ttl(key);
+
+                if (currentCount == -1) {
+                    return new RateLimitResult(
+                            false,
+                            0,
+                            ttl
+                    );
+                }
+
+                long remaining =
+                        Math.max(0, maxReq - currentCount);
+
+                return new RateLimitResult(
+                        true,
+                        remaining,
+                        ttl
+                );
 
             } catch (JedisException e) {
                 attempts++;
@@ -69,12 +94,12 @@ public FixedWindowLimiter(
                     // Redis is down — fail open (allow) or fail closed (block)
                     // fail open here: don't punish users for our infrastructure issues
                     System.err.println("Redis unavailable after 3 attempts, failing open: " + e.getMessage());
-                    return true;
+                    return new RateLimitResult(true, -1, -1);
                 }
             }
         }
 
-        return true; // unreachable but compiler needs it
+        return new RateLimitResult(true, -1, -1); // unreachable but compiler needs it
     }
 
     public void clearUser(String userId) {
