@@ -2,6 +2,7 @@ package com.example.interceptor;
 
 import com.example.DTO.RateLimitResult;
 import com.example.Service.FixedWindowService;
+import com.example.Service.RateLimiterService;
 import com.example.annotation.RateLimit;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,12 +19,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private final FixedWindowService fixedWindowService;
-    private final FixedWindowService strictLimiterService;
-    private final Map<String, FixedWindowService>policyMap;
+    private final RateLimiterService fixedWindowService;
+    private final RateLimiterService strictLimiterService;
+    private final Map<String, RateLimiterService> policyMap;
 
-    public RateLimitInterceptor(FixedWindowService fixedWindowService, @Qualifier("strictLimiterService") FixedWindowService strictLimiterService
-        ) {
+    public RateLimitInterceptor(@Qualifier("fixedWindowService") RateLimiterService fixedWindowService, @Qualifier ("strictLimiterService") RateLimiterService strictLimiterService)
+    {
             this.fixedWindowService = fixedWindowService;
             this.strictLimiterService = strictLimiterService;
             this.policyMap = Map.of(
@@ -66,8 +67,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         // FixedWindowService selectedService = policyMap.getOrDefault(path, fixedWindowService);
 
         // result = selectedService.allowRequest(clientId);
-        FixedWindowService selectedService = policyMap.getOrDefault(policy, fixedWindowService);
-
+        RateLimiterService selectedService = policyMap.getOrDefault(policy,fixedWindowService);
         RateLimitResult result = selectedService.allowRequest(clientId);
         
         request.setAttribute(

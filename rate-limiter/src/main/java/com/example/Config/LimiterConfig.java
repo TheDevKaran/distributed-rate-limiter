@@ -1,7 +1,10 @@
 package com.example.Config;
 
 import com.example.limiter.redis.fixed.FixedWindowLimiter;
+import com.example.limiter.redis.sliding.SlidingWindowLimiter;
 import com.example.Service.FixedWindowService;
+import com.example.Service.SlidingWindowService;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,6 +34,16 @@ public class LimiterConfig {
     }
 
     @Bean
+    public SlidingWindowLimiter slidingLimiter(JedisPool jedisPool) {
+        return new SlidingWindowLimiter(
+            jedisPool,
+            5,
+            60,
+            "sliding"
+        );
+    }
+
+    @Bean
     public FixedWindowService fixedWindowService(@Qualifier("defaultLimiter") FixedWindowLimiter limiter) {
         return new FixedWindowService(limiter);
     }
@@ -39,4 +52,9 @@ public class LimiterConfig {
     public FixedWindowService strictLimiterService(@Qualifier("strictLimiter") FixedWindowLimiter limiter) {
         return new FixedWindowService(limiter);
     }   
+
+    @Bean
+    public SlidingWindowService slidingWindowService(SlidingWindowLimiter limiter) {
+        return new SlidingWindowService(limiter);
+    }
 }

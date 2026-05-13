@@ -1,14 +1,9 @@
 package com.example.Service;
 
-import org.springframework.stereotype.Service;
+import com.example.DTO.RateLimitResult;
 
-@Service
-public class RateLimiterService {
+public interface RateLimiterService {
 
-    public boolean allowRequest(String clientId) {
-
-        System.out.println("Checking rate limit for: " + clientId);
-
-        return true;
-    }
+    RateLimitResult allowRequest(String userId);
+    
 }

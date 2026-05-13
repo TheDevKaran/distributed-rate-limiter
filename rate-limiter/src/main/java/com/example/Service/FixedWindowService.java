@@ -6,8 +6,8 @@ import com.example.DTO.RateLimitResult;
 import com.example.limiter.redis.fixed.FixedWindowLimiter;
 
 @Service
-public class FixedWindowService {
-
+public class FixedWindowService implements RateLimiterService {
+    
     private final FixedWindowLimiter limiter;
 
     public FixedWindowService(
