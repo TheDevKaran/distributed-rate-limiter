@@ -15,11 +15,6 @@ public class SlidingWindowService implements RateLimiterService {
 
     @Override
     public RateLimitResult allowRequest(String userId) {
-        boolean allowed = limiter.allowedReq(userId);
-        return new RateLimitResult(
-            allowed,
-            allowed ? 1 : 0,
-            0
-        );
+        return limiter.allowedReq(userId);
     }   
 }

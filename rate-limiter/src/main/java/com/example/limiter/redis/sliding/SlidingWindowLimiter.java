@@ -1,11 +1,14 @@
 package com.example.limiter.redis.sliding;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import com.example.DTO.RateLimitResult;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.exceptions.JedisException;
-
-import java.util.Arrays;
-import java.util.Collections;
 
 public class SlidingWindowLimiter {
 
@@ -28,7 +31,17 @@ public class SlidingWindowLimiter {
         local currentCount = redis.call('ZCARD', key)
 
         if currentCount >= maxReq then
-            return -1
+
+            local oldestRequest =
+                redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+
+            local oldestTimestamp =
+                tonumber(oldestRequest[2])
+
+            local retryAfter =
+                oldestTimestamp + windowTime - currentTime
+
+            return {0, 0, retryAfter}
         end
 
         local uniqueMember =
@@ -41,7 +54,8 @@ public class SlidingWindowLimiter {
         redis.call('EXPIRE', key, windowTime + 1)
         redis.call('EXPIRE', key .. ':seq', windowTime + 1)
 
-        return currentCount + 1
+        local remaining = maxReq - (currentCount + 1)
+        return {1, remaining, 0}
         """;
 
     public SlidingWindowLimiter(
@@ -61,10 +75,14 @@ public class SlidingWindowLimiter {
         }
     }
 
-    public boolean allowedReq(String userId) {
+    public RateLimitResult allowedReq(String userId) {
 
         if (maxReq <= 0)
-            return false;
+            return new RateLimitResult(
+                    false,
+                    0,
+                    windowTime
+            );
 
         String key =
                 "rate_limit:"
@@ -91,7 +109,23 @@ public class SlidingWindowLimiter {
                         )
                 );
 
-                return (Long) result != -1;
+                List<Long> response =
+                        (List<Long>) result;
+
+                boolean allowed =
+                        response.get(0) == 1;
+
+                long remaining =
+                        response.get(1);
+
+                long retryAfter =
+                        response.get(2);
+
+                return new RateLimitResult(
+                        allowed,
+                        (int) remaining,
+                        retryAfter
+                );
 
             } catch (JedisException e) {
 
@@ -104,12 +138,20 @@ public class SlidingWindowLimiter {
                             + e.getMessage()
                     );
 
-                    return true;
+                    return new RateLimitResult(
+                            true,
+                            maxReq,
+                            0
+                    );
                 }
             }
         }
 
-        return true;
+        return new RateLimitResult(
+                true,
+                maxReq,
+                0
+        );
     }
 
     public void clearUser(String userId) {

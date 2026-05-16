@@ -21,15 +21,29 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final RateLimiterService fixedWindowService;
     private final RateLimiterService strictLimiterService;
+    private final RateLimiterService slidingWindowService;
     private final Map<String, RateLimiterService> policyMap;
 
-    public RateLimitInterceptor(@Qualifier("fixedWindowService") RateLimiterService fixedWindowService, @Qualifier ("strictLimiterService") RateLimiterService strictLimiterService)
+    public RateLimitInterceptor(
+
+    @Qualifier("fixedWindowService")
+    RateLimiterService fixedWindowService,
+
+    @Qualifier("strictLimiterService")
+    RateLimiterService strictLimiterService,
+
+    @Qualifier("slidingWindowService")
+    RateLimiterService slidingWindowService
+)
     {
             this.fixedWindowService = fixedWindowService;
             this.strictLimiterService = strictLimiterService;
+            this.slidingWindowService = slidingWindowService;
             this.policyMap = Map.of(
                 "strict", strictLimiterService,
-                "default", fixedWindowService
+                "default", fixedWindowService,
+                "sliding", slidingWindowService
+
         );
         }
 

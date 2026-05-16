@@ -1,5 +1,7 @@
 package com.example;
 
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,5 +19,14 @@ public class HealthController {
     @GetMapping("/login")
     public String login() {
         return "Logged In!";
+    }
+
+    @RateLimit(policy = "sliding")
+    @GetMapping("/sliding")
+    public Map<String, String> sliding() {
+        return Map.of(
+            "message",
+            "Sliding Window API"
+        );
     }
 }
