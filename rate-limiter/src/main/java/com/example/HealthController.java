@@ -8,8 +8,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.DTO.RateLimitResult;
 import com.example.annotation.RateLimit;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 
+@Tag(
+    name =
+    "Rate Limited APIs"
+)
 @RestController
 public class HealthController {
 

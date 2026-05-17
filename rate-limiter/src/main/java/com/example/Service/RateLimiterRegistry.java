@@ -1,6 +1,8 @@
 package com.example.Service;
 
 import com.example.Entity.RateLimitPolicy;
+import com.example.Exception.PolicyNotFoundException;
+import com.example.Exception.UnsupportedAlgorithmException;
 import com.example.Repository.RateLimitPolicyRepository;
 import com.example.limiter.RateLimiter;
 import com.example.limiter.redis.sliding.SlidingWindowLimiter;
@@ -49,15 +51,15 @@ public class RateLimiterRegistry {
     RateLimitPolicy config =
             repository.findByPolicyName(policy)
                     .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Policy not found: " + policy
-                            )
+                        new PolicyNotFoundException(
+                            policy
+                        )
                     );
     System.out.println(config.getMaxRequests());
 
     RateLimiter limiter = switch (config.getAlgorithm()) {
 
-        case "fixed" ->
+        case FIXED  ->
 
                 new FixedWindowLimiter(
                         jedisPool,
@@ -66,7 +68,7 @@ public class RateLimiterRegistry {
                         policy
                 );
 
-        case "sliding" ->
+        case SLIDING ->
 
                 new SlidingWindowLimiter(
                         jedisPool,
@@ -75,7 +77,7 @@ public class RateLimiterRegistry {
                         policy
                 );
 
-        case "token" ->
+        case TOKEN ->
 
                 new TokenBucketRateLimiter(
                         jedisPool,
@@ -84,9 +86,9 @@ public class RateLimiterRegistry {
                         policy
                 );
 
-        default -> throw new RuntimeException(
-                "Unknown algorithm: "
-                + config.getAlgorithm()
+        default ->
+            throw new UnsupportedAlgorithmException(
+                config.getAlgorithm()
         );
     };
     cache.put(policy, limiter);

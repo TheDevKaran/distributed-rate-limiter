@@ -2,7 +2,7 @@ package InMemroyTest;
 
 import org.junit.jupiter.api.Test;
 
-import com.example.inmemory.sliding.SlidingWindow;
+import com.example.limiter.inmemory.sliding.SlidingWindow;
 
 import java.util.function.LongSupplier;
 

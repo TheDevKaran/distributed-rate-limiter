@@ -1,13 +1,23 @@
 package com.example.Controller;
 
+import com.example.DTO.UpdatePolicyRequest;
 import com.example.Entity.RateLimitPolicy;
+import com.example.Exception.PolicyNotFoundException;
 import com.example.Repository.RateLimitPolicyRepository;
 import com.example.Service.MetricsService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
 
+@Tag(
+    name =
+    "Admin APIs"
+)
 @RestController
 @RequestMapping("/admin")
 public class AdminController {
@@ -20,19 +30,26 @@ public class AdminController {
         this.metricsService = metricsService;
     }
 
+    @Operation(
+        summary =
+        "Update rate limit policy"
+    )
     @PutMapping("/policy/{name}")
     public RateLimitPolicy updatePolicy(
 
             @PathVariable String name,
 
-            @RequestBody RateLimitPolicy body
+            @RequestBody
+            @Valid
+            UpdatePolicyRequest body
     ) {
 
         RateLimitPolicy policy =
                 repository.findByPolicyName(name)
                         .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Policy not found"
+                            () ->
+                                new PolicyNotFoundException(
+                                    name
                                 )
                         );
 

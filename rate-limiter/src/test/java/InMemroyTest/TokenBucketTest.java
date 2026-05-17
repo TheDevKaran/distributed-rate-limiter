@@ -1,6 +1,6 @@
 package InMemroyTest;
 
-import com.example.inmemory.token.TokenBucketRateLimiter;
+import com.example.limiter.inmemory.token.TokenBucketRateLimiter;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.LongSupplier;

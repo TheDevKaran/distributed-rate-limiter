@@ -1,25 +1,57 @@
 package com.example.Entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "rate_limit_policies")
 public class RateLimitPolicy {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+        strategy =
+        GenerationType.IDENTITY
+    )
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(
+        unique = true,
+        nullable = false
+    )
+    @NotBlank(
+        message =
+        "Policy name required"
+    )
     private String policyName;
 
+    @Enumerated(
+        EnumType.STRING
+    )
+    @NotNull(
+        message =
+        "Algorithm required"
+    )
     @Column(nullable = false)
-    private String algorithm;
+    private AlgorithmType algorithm;
 
+    @Min(
+        value = 1,
+        message =
+        "Max requests must be > 0"
+    )
     private Integer maxRequests;
 
+    @Min(
+        value = 1,
+        message =
+        "Window seconds must be > 0"
+    )
     private Integer windowSeconds;
 
+    @Positive(
+        message =
+        "Refill rate must be positive"
+    )
     private Double refillRate;
 
     public RateLimitPolicy() {
@@ -33,39 +65,58 @@ public class RateLimitPolicy {
         return policyName;
     }
 
-    public void setPolicyName(String policyName) {
-        this.policyName = policyName;
+    public void setPolicyName(
+            String policyName
+    ) {
+        this.policyName =
+                policyName;
     }
 
-    public String getAlgorithm() {
+    public AlgorithmType
+    getAlgorithm() {
         return algorithm;
     }
 
-    public void setAlgorithm(String algorithm) {
-        this.algorithm = algorithm;
+    public void setAlgorithm(
+            AlgorithmType algorithm
+    ) {
+        this.algorithm =
+                algorithm;
     }
 
-    public Integer getMaxRequests() {
+    public Integer
+    getMaxRequests() {
         return maxRequests;
     }
 
-    public void setMaxRequests(Integer maxRequests) {
-        this.maxRequests = maxRequests;
+    public void setMaxRequests(
+            Integer maxRequests
+    ) {
+        this.maxRequests =
+                maxRequests;
     }
 
-    public Integer getWindowSeconds() {
+    public Integer
+    getWindowSeconds() {
         return windowSeconds;
     }
 
-    public void setWindowSeconds(Integer windowSeconds) {
-        this.windowSeconds = windowSeconds;
+    public void setWindowSeconds(
+            Integer windowSeconds
+    ) {
+        this.windowSeconds =
+                windowSeconds;
     }
 
-    public Double getRefillRate() {
+    public Double
+    getRefillRate() {
         return refillRate;
     }
 
-    public void setRefillRate(Double refillRate) {
-        this.refillRate = refillRate;
+    public void setRefillRate(
+            Double refillRate
+    ) {
+        this.refillRate =
+                refillRate;
     }
 }
