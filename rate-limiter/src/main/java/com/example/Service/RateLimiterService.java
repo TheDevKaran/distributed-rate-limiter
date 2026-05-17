@@ -1,9 +1,9 @@
-package com.example.Service;
+// package com.example.Service;
 
-import com.example.DTO.RateLimitResult;
+// import com.example.DTO.RateLimitResult;
 
-public interface RateLimiterService {
+// public interface RateLimiterService {
 
-    RateLimitResult allowRequest(String userId);
+//     RateLimitResult allowRequest(String userId);
     
-}
+// }

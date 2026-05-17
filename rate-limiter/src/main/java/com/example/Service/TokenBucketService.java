@@ -1,22 +1,22 @@
-package com.example.Service;
+// package com.example.Service;
 
-import com.example.DTO.RateLimitResult;
-import com.example.limiter.redis.token.TokenBucketRateLimiter;
+// import com.example.DTO.RateLimitResult;
+// import com.example.limiter.redis.token.TokenBucketRateLimiter;
 
-import org.springframework.stereotype.Service;
+// import org.springframework.stereotype.Service;
 
-@Service
-public class TokenBucketService implements RateLimiterService {
+// @Service
+// public class TokenBucketService implements RateLimiterService {
 
-    private final TokenBucketRateLimiter limiter;
+//     private final TokenBucketRateLimiter limiter;
 
-    public TokenBucketService(TokenBucketRateLimiter limiter) {
-        this.limiter = limiter;
-    }
+//     public TokenBucketService(TokenBucketRateLimiter limiter) {
+//         this.limiter = limiter;
+//     }
 
-    @Override
-    public RateLimitResult allowRequest(String userId) {
-        return limiter.allowRequest(userId);
+//     @Override
+//     public RateLimitResult allowRequest(String userId) {
+//         return limiter.allowRequest(userId);
   
-}
-}
+// }
+// }

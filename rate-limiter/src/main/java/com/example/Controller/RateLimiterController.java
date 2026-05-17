@@ -3,7 +3,6 @@ package com.example.Controller;
 import com.example.DTO.CheckRequest;
 import com.example.DTO.CheckResponse;
 import com.example.DTO.RateLimitResult;
-import com.example.Service.FixedWindowService;
 import com.example.annotation.RateLimit;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,19 +18,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/rate-limit")
 public class RateLimiterController {
 
-    private final FixedWindowService fixedWindowService;
-
-    public RateLimiterController(
-            FixedWindowService fixedWindowService
+    @RateLimit(policy = "fixed")
+    @GetMapping("/hello")
+    public Map<String, Object> hello(
+            HttpServletRequest request
     ) {
-        this.fixedWindowService = fixedWindowService;
-    }
-        
-        @RateLimit(policy = "default")
-        @GetMapping("/hello")
-        public Map<String, Object> hello(
-                HttpServletRequest request
-        ) {
 
         RateLimitResult result =
                 (RateLimitResult) request.getAttribute(
@@ -45,5 +36,5 @@ public class RateLimiterController {
                 "retryAfterSeconds",
                 result.getRetryAfterSeconds()
         );
-        }
+    }
 }

@@ -1,9 +1,7 @@
 package com.example.interceptor;
 
 import com.example.DTO.RateLimitResult;
-import com.example.Service.FixedWindowService;
 import com.example.Service.RateLimiterRegistry;
-import com.example.Service.RateLimiterService;
 import com.example.annotation.RateLimit;
 import com.example.limiter.RateLimiter;
 
