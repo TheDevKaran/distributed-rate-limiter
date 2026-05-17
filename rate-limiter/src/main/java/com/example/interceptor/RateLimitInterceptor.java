@@ -2,8 +2,10 @@ package com.example.interceptor;
 
 import com.example.DTO.RateLimitResult;
 import com.example.Service.FixedWindowService;
+import com.example.Service.RateLimiterRegistry;
 import com.example.Service.RateLimiterService;
 import com.example.annotation.RateLimit;
+import com.example.limiter.RateLimiter;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,32 +21,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private final RateLimiterService fixedWindowService;
-    private final RateLimiterService strictLimiterService;
-    private final RateLimiterService slidingWindowService;
-    private final Map<String, RateLimiterService> policyMap;
+    private final RateLimiterRegistry registry;
 
-    public RateLimitInterceptor(
-
-    @Qualifier("fixedWindowService")
-    RateLimiterService fixedWindowService,
-
-    @Qualifier("strictLimiterService")
-    RateLimiterService strictLimiterService,
-
-    @Qualifier("slidingWindowService")
-    RateLimiterService slidingWindowService
-)
-    {
-            this.fixedWindowService = fixedWindowService;
-            this.strictLimiterService = strictLimiterService;
-            this.slidingWindowService = slidingWindowService;
-            this.policyMap = Map.of(
-                "strict", strictLimiterService,
-                "default", fixedWindowService,
-                "sliding", slidingWindowService
-
-        );
+    public RateLimitInterceptor(RateLimiterRegistry registry) {
+        this.registry = registry;
         }
 
     @Override
@@ -81,8 +61,9 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         // FixedWindowService selectedService = policyMap.getOrDefault(path, fixedWindowService);
 
         // result = selectedService.allowRequest(clientId);
-        RateLimiterService selectedService = policyMap.getOrDefault(policy,fixedWindowService);
-        RateLimitResult result = selectedService.allowRequest(clientId);
+        RateLimiter limiter = registry.getLimiter(policy);
+
+        RateLimitResult result = limiter.allowRequest(clientId);
         
         request.setAttribute(
             "rateLimitResult",

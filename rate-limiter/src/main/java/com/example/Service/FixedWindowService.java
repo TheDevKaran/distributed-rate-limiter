@@ -20,6 +20,6 @@ public class FixedWindowService implements RateLimiterService {
             String userId
     ) {
 
-        return limiter.allowedReq(userId);
+        return limiter.allowRequest(userId);
     }
 }

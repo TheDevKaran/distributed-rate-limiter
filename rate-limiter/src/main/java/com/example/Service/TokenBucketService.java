@@ -1,20 +1,22 @@
 package com.example.Service;
 
 import com.example.DTO.RateLimitResult;
-import com.example.limiter.redis.sliding.SlidingWindowLimiter;
+import com.example.limiter.redis.token.TokenBucketRateLimiter;
+
 import org.springframework.stereotype.Service;
 
 @Service
-public class SlidingWindowService implements RateLimiterService {
+public class TokenBucketService implements RateLimiterService {
 
-    private final SlidingWindowLimiter limiter;
+    private final TokenBucketRateLimiter limiter;
 
-    public SlidingWindowService(SlidingWindowLimiter limiter) {
+    public TokenBucketService(TokenBucketRateLimiter limiter) {
         this.limiter = limiter;
     }
 
     @Override
     public RateLimitResult allowRequest(String userId) {
         return limiter.allowRequest(userId);
-    }   
+  
+}
 }

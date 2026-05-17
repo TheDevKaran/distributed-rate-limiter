@@ -1,5 +1,0 @@
-RedisTest\TokenBucketRateLimiterTest.class
-InMemroyTest\SlidingWindowTest.class
-InMemroyTest\TokenBucketTest.class
-RedisTest\FixedWindowLimiterTest.class
-RedisTest\SlidingWindowLimiterTest.class

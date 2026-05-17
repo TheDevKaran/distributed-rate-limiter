@@ -9,8 +9,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import com.example.DTO.RateLimitResult;
+import com.example.limiter.RateLimiter;
 
-public class FixedWindowLimiter {
+public class FixedWindowLimiter implements RateLimiter{
 
     private final JedisPool pool;
     private final int maxReq;
@@ -49,7 +50,7 @@ public FixedWindowLimiter(
     }
 }
 
-    public RateLimitResult allowedReq(String userId) {
+    public RateLimitResult allowRequest(String userId) {
         if (maxReq <= 0)
             return new RateLimitResult(false, 0, 0);
 

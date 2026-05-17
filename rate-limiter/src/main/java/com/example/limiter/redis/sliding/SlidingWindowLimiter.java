@@ -5,12 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 import com.example.DTO.RateLimitResult;
+import com.example.limiter.RateLimiter;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.exceptions.JedisException;
 
-public class SlidingWindowLimiter {
+public class SlidingWindowLimiter implements RateLimiter{
 
     private final JedisPool pool;
     private final int maxReq;
@@ -75,7 +76,7 @@ public class SlidingWindowLimiter {
         }
     }
 
-    public RateLimitResult allowedReq(String userId) {
+    public RateLimitResult allowRequest(String userId) {
 
         if (maxReq <= 0)
             return new RateLimitResult(

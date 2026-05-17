@@ -1,6 +1,6 @@
 package RedisTest;
 
-import com.example.redis.sliding.SlidingWindowLimiter;
+import com.example.limiter.redis.sliding.SlidingWindowLimiter;
 import redis.clients.jedis.Jedis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

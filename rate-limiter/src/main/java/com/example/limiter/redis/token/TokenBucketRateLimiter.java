@@ -7,13 +7,18 @@ import redis.clients.jedis.exceptions.JedisException;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
-public class TokenBucketRateLimiter {
+import com.example.DTO.RateLimitResult;
+import com.example.limiter.RateLimiter;
 
-    private final JedisPool pool;
+public class TokenBucketRateLimiter implements RateLimiter {
+
+    private final JedisPool pool;   
     private final long capacity;
     private final double refillRate;
     private final String scriptSha;
+    private final String policyName;
 
     // ttl = how long before an idle bucket expires from Redis
     // default: enough time for bucket to fully refill from empty
@@ -38,7 +43,7 @@ public class TokenBucketRateLimiter {
                 'lastRefillTime', now
             )
             redis.call('EXPIRE', key, ARGV[4])
-            return 1
+            return {1, math.floor(tokens), 0}
         end
 
         -- refill based on elapsed time
@@ -59,7 +64,7 @@ public class TokenBucketRateLimiter {
                 'lastRefillTime', now
             )
             redis.call('EXPIRE', key, ARGV[4])
-            return 1
+            return {1, math.floor(tokens), 0}
         end
 
         -- not enough tokens — still update lastRefillTime
@@ -69,56 +74,46 @@ public class TokenBucketRateLimiter {
             'lastRefillTime', now
         )
         redis.call('EXPIRE', key, ARGV[4])
-        return -1
-        """;
+        local retryAfter = math.ceil((1 - tokens) / refillRate)
 
-    public TokenBucketRateLimiter(long capacity, double refillRate) {
-        this(
-            capacity,
-            refillRate,
-            System.getenv().getOrDefault("REDIS_HOST", "localhost"),
-            Integer.parseInt(System.getenv().getOrDefault("REDIS_PORT", "6379"))
-        );
-    }
+        return {0, math.floor(tokens), retryAfter}        
+""";
 
-    public TokenBucketRateLimiter(long capacity, double refillRate,
-                                   String host, int port) {
+   public TokenBucketRateLimiter(
+        JedisPool pool,
+        long capacity,
+        double refillRate,
+        String policyName
+    ) {
+
         if (capacity < 0)
             throw new IllegalArgumentException("Capacity must be >= 0");
+
         if (refillRate < 0)
             throw new IllegalArgumentException("Refill rate must be >= 0");
 
-        this.capacity   = capacity;
+        this.pool = pool;
+        this.capacity = capacity;
         this.refillRate = refillRate;
+        this.policyName = policyName;
 
-        // idle TTL: time to refill full bucket from empty + 60s buffer
-        // if refillRate is 0, default to 1 hour
         this.ttlSeconds = refillRate > 0
-            ? (long) Math.ceil(capacity / refillRate) + 60
-            : 3600;
-
-        JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxTotal(50);
-        config.setMaxIdle(10);
-        config.setMinIdle(2);
-        config.setTestOnBorrow(true);
-
-        this.pool = new JedisPool(config, host, port);
+                ? (long) Math.ceil(capacity / refillRate) + 60
+                : 3600;
 
         try (Jedis jedis = pool.getResource()) {
             this.scriptSha = jedis.scriptLoad(LUA_SCRIPT);
-        } catch (JedisException e) {
-            throw new RuntimeException(
-                "Failed to connect to Redis at " + host + ":" + port, e
-            );
         }
     }
 
-    public boolean allowRequests(String userId) {
+    public RateLimitResult allowRequest(String userId) {
         if (capacity <= 0)
-            return false;
-
-        String key = "rate_limit:token:" + userId;
+            return new RateLimitResult(
+                    false,
+                    0,
+                    1
+            );
+        String key = "rate_limit:" + policyName + ":" + userId;        
         long now   = System.currentTimeMillis();
 
         int attempts = 0;
@@ -129,13 +124,30 @@ public class TokenBucketRateLimiter {
                     scriptSha,
                     Collections.singletonList(key),
                     Arrays.asList(
-                        String.valueOf(capacity),
-                        String.valueOf(refillRate),
-                        String.valueOf(now),
-                        String.valueOf(ttlSeconds)
+                            String.valueOf(capacity),
+                            String.valueOf(refillRate),
+                            String.valueOf(now),
+                            String.valueOf(ttlSeconds)
                     )
                 );
-                return (Long) result != -1;
+
+                List<Long> response =
+                        (List<Long>) result;
+
+                boolean allowed =
+                        response.get(0) == 1;
+
+                long remaining =
+                        response.get(1);
+
+                long retryAfter =
+                        response.get(2);
+
+                return new RateLimitResult(
+                        allowed,
+                        (int) remaining,
+                        retryAfter
+                );
 
             } catch (JedisException e) {
                 attempts++;
@@ -144,17 +156,25 @@ public class TokenBucketRateLimiter {
                         "Redis unavailable after 3 attempts, failing open: "
                         + e.getMessage()
                     );
-                    return true;
+                    return new RateLimitResult(
+                            true,
+                            (int) capacity,
+                            0
+                    );
                 }
             }
         }
 
-        return true;
+        return new RateLimitResult(
+                true,
+                (int) capacity,
+                0
+        );
     }
 
     public void clearUser(String userId) {
         try (Jedis jedis = pool.getResource()) {
-            jedis.del("rate_limit:token:" + userId);
+        jedis.del("rate_limit:" + policyName + ":" + userId); 
         } catch (JedisException e) {
             System.err.println("Failed to clear user: " + e.getMessage());
         }

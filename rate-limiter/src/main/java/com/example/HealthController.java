@@ -29,4 +29,13 @@ public class HealthController {
             "Sliding Window API"
         );
     }
+
+    @RateLimit(policy = "token")
+@GetMapping("/token")
+public Map<String, String> token() {
+    return Map.of(
+        "message",
+        "Token Bucket API"
+    );
+}
 }
