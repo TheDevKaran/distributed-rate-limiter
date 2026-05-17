@@ -2,6 +2,9 @@ package com.example.Controller;
 
 import com.example.Entity.RateLimitPolicy;
 import com.example.Repository.RateLimitPolicyRepository;
+import com.example.Service.MetricsService;
+
+import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -10,9 +13,11 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final RateLimitPolicyRepository repository;
+    private final MetricsService metricsService;
 
-    public AdminController(RateLimitPolicyRepository repository) {
+    public AdminController(RateLimitPolicyRepository repository, MetricsService metricsService) {
         this.repository = repository;
+        this.metricsService = metricsService;
     }
 
     @PutMapping("/policy/{name}")
@@ -47,5 +52,13 @@ public class AdminController {
             );
 
         return repository.save(policy);
+    }
+
+    @GetMapping("/metrics")
+    public Map<String,Object>
+    metrics() {
+
+        return metricsService
+                .getMetrics();
     }
 }

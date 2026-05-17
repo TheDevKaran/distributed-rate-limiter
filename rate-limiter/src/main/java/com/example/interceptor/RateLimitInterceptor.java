@@ -1,6 +1,7 @@
 package com.example.interceptor;
 
 import com.example.DTO.RateLimitResult;
+import com.example.Service.MetricsService;
 import com.example.Service.RateLimiterRegistry;
 import com.example.annotation.RateLimit;
 import com.example.limiter.RateLimiter;
@@ -20,9 +21,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final RateLimiterRegistry registry;
+    private final MetricsService metrics;
 
-    public RateLimitInterceptor(RateLimiterRegistry registry) {
+    public RateLimitInterceptor(RateLimiterRegistry registry, MetricsService metrics) {
         this.registry = registry;
+        this.metrics = metrics;
         }
 
     @Override
@@ -72,6 +75,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         RateLimiter limiter = registry.getLimiter(policy);
 
         RateLimitResult result = limiter.allowRequest(clientId);
+        metrics.request(policy);
         
         request.setAttribute(
             "rateLimitResult",
@@ -93,6 +97,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         );
 
         if (!result.isAllowed()) {
+                metrics.blocked();
 
             response.setStatus(
                     HttpStatus.TOO_MANY_REQUESTS.value()
