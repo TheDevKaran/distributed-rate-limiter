@@ -19,7 +19,11 @@ public class MetricsService {
             algoHits =
             new ConcurrentHashMap<>();
 
-    public void request(String policy) {
+    private final Map<String, AtomicLong>
+        clientUsage =
+        new ConcurrentHashMap<>();
+
+    public void request(String policy, String clientId) {
 
         total.incrementAndGet();
 
@@ -27,6 +31,13 @@ public class MetricsService {
             .computeIfAbsent(
                 policy,
                 k -> new AtomicLong()
+            )
+            .incrementAndGet();
+
+        clientUsage
+            .computeIfAbsent(
+                    clientId,
+                    k -> new AtomicLong()
             )
             .incrementAndGet();
     }
@@ -45,7 +56,10 @@ public class MetricsService {
             blocked.get(),
 
             "algorithmUsage",
-            algoHits
+            algoHits,
+
+            "clientUsage",
+            clientUsage
         );
     }
 }

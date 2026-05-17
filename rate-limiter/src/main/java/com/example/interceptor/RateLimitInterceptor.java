@@ -75,7 +75,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         RateLimiter limiter = registry.getLimiter(policy);
 
         RateLimitResult result = limiter.allowRequest(clientId);
-        metrics.request(policy);
+        metrics.request(policy, clientId);
         
         request.setAttribute(
             "rateLimitResult",
