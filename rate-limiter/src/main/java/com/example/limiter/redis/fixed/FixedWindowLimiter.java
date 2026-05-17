@@ -33,22 +33,22 @@ public class FixedWindowLimiter implements RateLimiter{
         """;
 
     // default constructor — reads from env or falls back to localhost
-public FixedWindowLimiter(
-        JedisPool pool,
-        int maxReq,
-        int windowTime,
-        String policyName
+    public FixedWindowLimiter(
+            JedisPool pool,
+            int maxReq,
+            int windowTime,
+            String policyName
 
-) {
-    this.pool = pool;
-    this.maxReq = maxReq;
-    this.windowTime = windowTime;
-    this.policyName = policyName;
+    ) {
+        this.pool = pool;
+        this.maxReq = maxReq;
+        this.windowTime = windowTime;
+        this.policyName = policyName;
 
-    try (Jedis jedis = pool.getResource()) {
-        this.scriptSha = jedis.scriptLoad(LUA_SCRIPT);
+        try (Jedis jedis = pool.getResource()) {
+            this.scriptSha = jedis.scriptLoad(LUA_SCRIPT);
+        }
     }
-}
 
     public RateLimitResult allowRequest(String userId) {
         if (maxReq <= 0)

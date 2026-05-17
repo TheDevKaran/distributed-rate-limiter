@@ -31,11 +31,21 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             HttpServletResponse response,
             Object handler
     ) throws Exception {
+
+        String path = request.getRequestURI();
+
+        if (path.startsWith("/admin") || path.startsWith("/health")) {
+                return true;
+        }
+
+        if (!(handler instanceof HandlerMethod)) {
+                return true;
+        }
         
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         RateLimit rateLimit = handlerMethod.getMethod().getAnnotation(RateLimit.class);
 
-        String policy = "default";
+        String policy = "fixed";
 
         if (rateLimit != null) {
             policy = rateLimit.policy();

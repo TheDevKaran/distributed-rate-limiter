@@ -5,7 +5,10 @@ import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.DTO.RateLimitResult;
 import com.example.annotation.RateLimit;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 public class HealthController {
@@ -19,6 +22,19 @@ public class HealthController {
     @GetMapping("/login")
     public String login() {
         return "Logged In!";
+    }
+
+    @RateLimit(policy = "fixed")
+    @GetMapping("/fixed")
+    public Map<String, Object> fixed(HttpServletRequest request) {
+        RateLimitResult result = (RateLimitResult) request.getAttribute("rateLimitResult");
+        return Map.of(
+            "allowed", true,
+            "remainingRequests",
+            result.getRemainingRequests(),
+            "retryAfterSeconds",
+            result.getRetryAfterSeconds()
+        );
     }
 
     @RateLimit(policy = "sliding")
