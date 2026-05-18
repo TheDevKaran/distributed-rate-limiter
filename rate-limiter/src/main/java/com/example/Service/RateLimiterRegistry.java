@@ -36,17 +36,26 @@ public class RateLimiterRegistry {
         this.jedisPool = jedisPool;
     }
 
-    public RateLimiter getLimiter(String policy) {
+public RateLimiter getLimiter(String policy) {
 
-        Long time = cacheTime.get(policy);
+    Long time = cacheTime.get(policy);
 
-            if (
-                cache.containsKey(policy)
-                && time != null
-                && System.currentTimeMillis() - time < CACHE_TTL
-            ) {
-                return cache.get(policy);
-            }
+    if (
+        cache.containsKey(policy)
+        && time != null
+        && System.currentTimeMillis() - time < CACHE_TTL
+    ) {
+
+        System.out.println(
+            "Returned from cache"
+        );
+
+        return cache.get(policy);
+    }
+
+    System.out.println(
+        "Fetching policy"
+    );
 
     RateLimitPolicy config =
             repository.findByPolicyName(policy)
@@ -55,45 +64,78 @@ public class RateLimiterRegistry {
                             policy
                         )
                     );
-    System.out.println(config.getMaxRequests());
 
-    RateLimiter limiter = switch (config.getAlgorithm()) {
+    System.out.println(
+        config.getAlgorithm()
+    );
 
-        case FIXED  ->
+    System.out.println(
+        config.getMaxRequests()
+    );
 
-                new FixedWindowLimiter(
-                        jedisPool,
-                        config.getMaxRequests(),
-                        config.getWindowSeconds(),
-                        policy
-                );
+    RateLimiter limiter = switch (
+            config.getAlgorithm()
+    ) {
 
-        case SLIDING ->
+        case FIXED -> {
 
-                new SlidingWindowLimiter(
-                        jedisPool,
-                        config.getMaxRequests(),
-                        config.getWindowSeconds(),
-                        policy
-                );
+            System.out.println(
+                "Creating FIXED"
+            );
 
-        case TOKEN ->
+            yield new FixedWindowLimiter(
+                    jedisPool,
+                    config.getMaxRequests(),
+                    config.getWindowSeconds(),
+                    policy
+            );
+        }
 
-                new TokenBucketRateLimiter(
-                        jedisPool,
-                        config.getMaxRequests(),
-                        config.getRefillRate(),
-                        policy
-                );
+        case SLIDING -> {
+
+            System.out.println(
+                "Creating SLIDING"
+            );
+
+            yield new SlidingWindowLimiter(
+                    jedisPool,
+                    config.getMaxRequests(),
+                    config.getWindowSeconds(),
+                    policy
+            );
+        }
+
+        case TOKEN -> {
+
+            System.out.println(
+                "Creating TOKEN"
+            );
+
+            yield new TokenBucketRateLimiter(
+                    jedisPool,
+                    config.getMaxRequests(),
+                    config.getRefillRate(),
+                    policy
+            );
+        }
 
         default ->
             throw new UnsupportedAlgorithmException(
                 config.getAlgorithm()
         );
     };
+
+    System.out.println(
+        "Limiter created"
+    );
+
     cache.put(policy, limiter);
-    cacheTime.put(policy,System.currentTimeMillis());
+
+    cacheTime.put(
+            policy,
+            System.currentTimeMillis()
+    );
 
     return limiter;
-    }
+}
 }

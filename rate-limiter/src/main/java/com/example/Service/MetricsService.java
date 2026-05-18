@@ -1,65 +1,59 @@
 package com.example.Service;
 
+import io.micrometer.core.instrument.*;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.Map;
 
 @Service
 public class MetricsService {
 
-    private final AtomicLong total =
-            new AtomicLong();
+    private final MeterRegistry registry;
 
-    private final AtomicLong blocked =
-            new AtomicLong();
+    public MetricsService(
+            MeterRegistry registry
+    ) {
 
-    private final Map<String,AtomicLong>
-            algoHits =
-            new ConcurrentHashMap<>();
+        this.registry =
+                registry;
+    }
 
-    private final Map<String, AtomicLong>
-        clientUsage =
-        new ConcurrentHashMap<>();
+    public void request(
+            String policy,
 
-    public void request(String policy, String clientId) {
+            String clientId
+    ) {
 
-        total.incrementAndGet();
-
-        algoHits
-            .computeIfAbsent(
-                policy,
-                k -> new AtomicLong()
-            )
-            .incrementAndGet();
-
-        clientUsage
-            .computeIfAbsent(
-                    clientId,
-                    k -> new AtomicLong()
-            )
-            .incrementAndGet();
+        Counter.builder(
+                "rate_limiter_requests_total"
+        )
+        .tag(
+                "policy",
+                policy
+        )
+        .tag(
+                "client",
+                clientId
+        )
+        .register(registry)
+        .increment();
     }
 
     public void blocked() {
-        blocked.incrementAndGet();
+
+        Counter.builder(
+                "rate_limiter_blocked_total"
+        )
+        .register(registry)
+        .increment();
     }
 
-    public Map<String,Object> getMetrics() {
+    public Map<String, Object>
+    getMetrics() {
 
         return Map.of(
-            "totalRequests",
-            total.get(),
-
-            "blockedRequests",
-            blocked.get(),
-
-            "algorithmUsage",
-            algoHits,
-
-            "clientUsage",
-            clientUsage
+            "message",
+            "Use /actuator/prometheus for metrics"
         );
     }
 }

@@ -64,30 +64,23 @@ public class GlobalExceptionHandler {
                 );
     }
 
-    @ExceptionHandler(
-            Exception.class
-    )
-    public ResponseEntity<?> handleGeneric(
-            Exception ex
-    ) {
+@ExceptionHandler(Exception.class)
+public ResponseEntity<?> handle(
+        Exception ex
+) {
 
-        return ResponseEntity
-                .status(
-                        HttpStatus.INTERNAL_SERVER_ERROR
+    ex.printStackTrace();
+
+    return ResponseEntity
+            .status(500)
+            .body(
+                new ErrorResponse(
+                    LocalDateTime.now(),
+                    500,
+                    ex.getMessage()
                 )
-                .body(
-                        Map.of(
-                                "timestamp",
-                                LocalDateTime.now(),
-
-                                "status",
-                                500,
-
-                                "error",
-                                "Something went wrong"
-                        )
-                );
-    }
+            );
+}
 
         @ExceptionHandler(
             MethodArgumentNotValidException.class
