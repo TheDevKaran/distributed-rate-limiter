@@ -1,59 +1,58 @@
 package com.example.Service;
 
-import io.micrometer.core.instrument.*;
-import org.springframework.stereotype.Service;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
+import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
 
 @Service
 public class MetricsService {
 
-    private final MeterRegistry registry;
+    private final Counter total;
+    private final Counter blocked;
 
     public MetricsService(
             MeterRegistry registry
     ) {
 
-        this.registry =
-                registry;
+        total = registry.counter(
+                "rate_limiter_requests_total"
+        );
+
+        blocked = registry.counter(
+                "rate_limiter_blocked_total"
+        );
     }
 
     public void request(
             String policy,
-
             String clientId
     ) {
-
-        Counter.builder(
-                "rate_limiter_requests_total"
-        )
-        .tag(
-                "policy",
-                policy
-        )
-        .tag(
-                "client",
-                clientId
-        )
-        .register(registry)
-        .increment();
+        total.increment();
     }
 
     public void blocked() {
-
-        Counter.builder(
-                "rate_limiter_blocked_total"
-        )
-        .register(registry)
-        .increment();
+        blocked.increment();
     }
 
-    public Map<String, Object>
-    getMetrics() {
+    public Map<String,Object> getMetrics() {
 
-        return Map.of(
-            "message",
-            "Use /actuator/prometheus for metrics"
-        );
-    }
+    Map<String,Object> ans =
+        new HashMap<>();
+
+    ans.put(
+        "totalRequests",
+        total.count()
+    );
+
+    ans.put(
+        "blockedRequests",
+        blocked.count()
+    );
+
+    return ans;
+}
 }
