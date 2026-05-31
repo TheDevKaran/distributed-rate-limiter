@@ -19,6 +19,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {
+        
 
     private final RateLimiterRegistry registry;
     private final MetricsService metrics;
@@ -97,35 +98,37 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         );
 
         if (!result.isAllowed()) {
-                metrics.blocked();
 
-            response.setStatus(
-                    HttpStatus.TOO_MANY_REQUESTS.value()
-            );
+                metrics.blocked(policy);
 
-            response.setContentType("application/json");
+                response.setStatus(
+                        HttpStatus.TOO_MANY_REQUESTS.value()
+                );
 
-            response.setStatus(
-                    HttpStatus.TOO_MANY_REQUESTS.value()
-            );
+                response.setContentType(
+                        "application/json"
+                );
 
-            String jsonResponse = """
-            {
-              "allowed": false,
-              "remainingRequests": %d,
-              "retryAfterSeconds": %d
-            }
-            """.formatted(
-                    result.getRemainingRequests(),
-                    result.getRetryAfterSeconds()
-            );
-      
+                String jsonResponse = """
+                {
+                "allowed": false,
+                "remainingRequests": %d,
+                "retryAfterSeconds": %d
+                }
+                """.formatted(
+                        result.getRemainingRequests(),
+                        result.getRetryAfterSeconds()
+                );
 
-            response.getWriter().write(jsonResponse);
+                response.getWriter().write(
+                        jsonResponse
+                );
 
-
-            return false;
+                return false;
         }
+
+         metrics.accepted(policy);
+
 
         return true;
     }

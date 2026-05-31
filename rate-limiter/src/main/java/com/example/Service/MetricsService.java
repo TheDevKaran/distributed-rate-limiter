@@ -11,48 +11,67 @@ import org.springframework.stereotype.Service;
 @Service
 public class MetricsService {
 
+    private final MeterRegistry registry;
+
     private final Counter total;
     private final Counter blocked;
+    private final Counter accepted;
 
-    public MetricsService(
-            MeterRegistry registry
-    ) {
+    public MetricsService(MeterRegistry registry) {
 
-        total = registry.counter(
-                "rate_limiter_requests_total"
-        );
+        this.registry = registry;
 
-        blocked = registry.counter(
-                "rate_limiter_blocked_total"
-        );
+        total = Counter.builder("rate_limiter_requests_total")
+                .description("Total requests")
+                .register(registry);
+
+        blocked = Counter.builder("rate_limiter_blocked_total")
+                .description("Blocked requests")
+                .register(registry);
+
+        accepted = Counter.builder("rate_limiter_accepted_total")
+                .description("Accepted requests")
+                .register(registry);
     }
 
-    public void request(
-            String policy,
-            String clientId
-    ) {
+    public void request(String policy, String clientId) {
+
         total.increment();
+
+        Counter.builder("rate_limiter_requests_by_policy")
+                .tag("policy", policy)
+                .register(registry)
+                .increment();
     }
 
-    public void blocked() {
+    public void blocked(String policy) {
+
         blocked.increment();
+
+        Counter.builder("rate_limiter_blocked_by_policy")
+                .tag("policy", policy)
+                .register(registry)
+                .increment();
     }
 
-    public Map<String,Object> getMetrics() {
+    public void accepted(String policy) {
 
-    Map<String,Object> ans =
-        new HashMap<>();
+        accepted.increment();
 
-    ans.put(
-        "totalRequests",
-        total.count()
-    );
+        Counter.builder("rate_limiter_accepted_by_policy")
+                .tag("policy", policy)
+                .register(registry)
+                .increment();
+    }
 
-    ans.put(
-        "blockedRequests",
-        blocked.count()
-    );
+    public Map<String, Object> getMetrics() {
 
-    return ans;
-}
+        Map<String, Object> ans = new HashMap<>();
+
+        ans.put("totalRequests", total.count());
+        ans.put("blockedRequests", blocked.count());
+        ans.put("acceptedRequests", accepted.count());
+
+        return ans;
+    }
 }

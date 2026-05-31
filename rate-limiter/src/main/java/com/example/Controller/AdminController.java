@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,10 @@ public class AdminController {
         summary =
         "Update rate limit policy"
     )
+    @GetMapping("/all")
+public String all() {
+    return "hell";
+}
     @PutMapping("/policy/{name}")
     public RateLimitPolicy updatePolicy(
 
